@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Co ti je do toho jak bude</title>
+  <style>
+    :root {
+      --bg: #07111e;
+      --card: #0e1d30;
+      --card-inner: #13253c;
+      --border: rgba(148, 184, 218, 0.16);
+      --text: #f1f6fb;
+      --muted: #8fa6bf;
+      --accent: #00b8d9;
+      --accent-hover: #00cde8;
+      --gold: #f5b942;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #102640 0%, var(--bg) 65%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px 16px 40px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .compass-badge {
+      width: 54px;
+      height: 54px;
+      margin: 0 auto 12px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.75rem;
+      line-height: 1.15;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 13px 40px 13px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .clear-btn {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px 16px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #04131c;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .verdict-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .verdict-kicker {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .place-title {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .model-pill {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .temp-box {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      background: rgba(0, 184, 217, 0.08);
+      border: 1px solid rgba(0, 184, 217, 0.25);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .temp-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .temp-value {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .quote-box {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 1rem;
+      line-height: 1.45;
+      margin-bottom: 14px;
+    }
+
+    .forecast-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .forecast-day {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .forecast-day-name {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .forecast-icon {
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .forecast-temps {
+      font-size: 0.82rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .forecast-min {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .probs-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .probs-labels strong {
+      color: var(--accent);
+    }
+
+    .bar-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #1d324d;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .bar-fill {
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #4ce0ff);
+    }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .btn-complaint {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 8, 15, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 380px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .modal h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .modal p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div class="compass-badge">🧭</div>
+      <h1>Co ti je do toho <span>jak bude</span></h1>
+      <p class="subtitle">Nejpřesnější předpověď s garantovanou úspěšností 50 %</p>
+    </header>
+
+    <section class="card">
+      <form id="weatherForm">
+        <label for="placeInput">Zadej obec nebo město</label>
+        <div class="input-wrap">
+          <input
+            id="placeInput"
+            type="text"
+            value="Rataje nad Sázavou"
+            placeholder="Např. Rataje nad Sázavou, Říčany, Jažlovice..."
+            autocomplete="off"
+          />
+          <button type="button" class="clear-btn" id="clearBtn" aria-label="Vymazat">✕</button>
+        </div>
+        <button type="submit" class="btn-primary">🔍 Zkontrolovat počasí</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="verdict-header">
+        <div>
+          <div class="verdict-kicker">Aktuální verdikt pro</div>
+          <h2 class="place-title" id="placeTitle">Rataje nad Sázavou</h2>
+        </div>
+        <div class="model-pill">MODEL 50/50</div>
+      </div>
+
+      <div class="temp-box">
+        <span class="temp-label" id="tempStatus">Teplota venku</span>
+        <span class="temp-value" id="tempValue">-- °C</span>
+      </div>
+
+      <div class="quote-box" id="quoteBox">
+        „Buď bude sněžit, nebo nebude. Zjisti to oknem.“
+      </div>
+
+      <div class="forecast-title">Výhled na další dny (cca 50 %)</div>
+      <div class="forecast-grid" id="forecastGrid">
+        <div class="forecast-day">
+          <div class="forecast-day-name">Zítra</div>
+          <div class="forecast-icon">⏳</div>
+          <div class="forecast-temps">--° <span class="forecast-min">/ --°</span></div>
+        </div>
+        <div class="forecast-day">
+          <div class="forecast-day-name">Pozítří</div>
+          <div class="forecast-icon">⏳</div>
+          <div class="forecast-temps">--° <span class="forecast-min">/ --°</span></div>
+        </div>
+        <div class="forecast-day">
+          <div class="forecast-day-name">Další den</div>
+          <div class="forecast-icon">⏳</div>
+          <div class="forecast-temps">--° <span class="forecast-min">/ --°</span></div>
+        </div>
+      </div>
+
+      <div class="probs-labels">
+        <span>Šance že vyjde: <strong>50 %</strong></span>
+        <span>Šance že nevyjde: 50 %</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill"></div>
+      </div>
+
+      <button type="button" class="btn-secondary" id="proBtn">
+        <span style="color: var(--gold);">★</span> Přesnější předpověď (PRO)
+      </button>
+      <button type="button" class="btn-complaint" id="complaintBtn">
+        Podat reklamaci na počasí
+      </button>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h3 id="modalTitle">Hláška</h3>
+      <p id="modalText"></p>
+      <button type="button" class="btn-primary" id="closeModalBtn">Zavřít</button>
+    </div>
+  </div>
+
+  <script>
+    const verdicts = [
+      "„Buď bude sněžit, nebo nebude. Zjisti to oknem.“",
+      "„Venku je přesně tolik stupňů, kolik ukazuje teploměr, až se na něj podíváš.“",
+      "„Možná zmokneš, možná ne. Vezmi si bundu a neotravuj.“",
+      "„Norský model se právě zamyslel a šel na kafe. Výsledek je padesát na padesát.“",
+      "„Vítr fouká odněkud někam. Podle toho, jak ti to odfoukne čepici.“"
+    ];
+
+    const placeInput = document.getElementById("placeInput");
+    const clearBtn = document.getElementById("clearBtn");
+    const weatherForm = document.getElementById("weatherForm");
+    const placeTitle = document.getElementById("placeTitle");
+    const tempValue = document.getElementById("tempValue");
+    const tempStatus = document.getElementById("tempStatus");
+    const quoteBox = document.getElementById("quoteBox");
+    const forecastGrid = document.getElementById("forecastGrid");
+    const proBtn = document.getElementById("proBtn");
+    const complaintBtn = document.getElementById("complaintBtn");
+    const modalBackdrop = document.getElementById("modalBackdrop");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalText = document.getElementById("modalText");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    function showModal(title, text) {
+      modalTitle.textContent = title;
+      modalText.textContent = text;
+      modalBackdrop.classList.add("open");
+    }
+
+    function pickRandomQuote() {
+      const idx = Math.floor(Math.random() * verdicts.length);
+      quoteBox.textContent = verdicts[idx];
+    }
+
+    function weatherCodeToIcon(code) {
+      if (code === 0) return "☀️";
+      if ([1, 2, 3].includes(code)) return "⛅";
+      if ([45, 48].includes(code)) return "🌫️";
+      if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "🌧️";
+      if ([71, 73, 75, 77, 85, 86].includes(code)) return "❄️";
+      if ([95, 96, 99].includes(code)) return "⛈️";
+      return "🌡️";
+    }
+
+    function formatShortDay(isoDate, index) {
+      if (index === 0) return "Zítra";
+      if (index === 1) return "Pozítří";
+      const d = new Date(isoDate + "T12:00:00");
+      return d.toLocaleDateString("cs-CZ", { weekday: "short" });
+    }
+
+    function renderForecast(daily) {
+      if (!daily || !Array.isArray(daily.time)) return;
+      const cards = [];
+      for (let i = 1; i <= 3 && i < daily.time.length; i++) {
+        const label = formatShortDay(daily.time[i], i - 1);
+        const icon = weatherCodeToIcon(daily.weather_code?.[i]);
+        const maxT = Math.round(daily.temperature_2m_max?.[i]);
+        const minT = Math.round(daily.temperature_2m_min?.[i]);
+        cards.push(`
+          <div class="forecast-day">
+            <div class="forecast-day-name">${label}</div>
+            <div class="forecast-icon">${icon}</div>
+            <div class="forecast-temps">${Number.isFinite(maxT) ? maxT + "°" : "--°"} <span class="forecast-min">/ ${Number.isFinite(minT) ? minT + "°" : "--°"}</span></div>
+          </div>
+        `);
+      }
+      if (cards.length > 0) {
+        forecastGrid.innerHTML = cards.join("");
+      }
+    }
+
+    async function fetchTemperatureForPlace(rawPlace) {
+      const query = rawPlace.trim() || "Rataje nad Sázavou";
+      placeTitle.textContent = query;
+      tempStatus.textContent = "Zjišťuji teplotu...";
+      tempValue.textContent = "...";
+      pickRandomQuote();
+
+      try {
+        const geoUrl =
+          "https://geocoding-api.open-meteo.com/v1/search?name=" +
+          encodeURIComponent(query) +
+          "&count=1&language=cs&format=json";
+
+        const geoRes = await fetch(geoUrl);
+        if (!geoRes.ok) throw new Error("Geo chyba");
+        const geoData = await geoRes.json();
+
+        if (!geoData.results || geoData.results.length === 0) {
+          tempStatus.textContent = "Místo nenalezeno";
+          tempValue.textContent = "? °C";
+          return;
+        }
+
+        const place = geoData.results[0];
+        placeTitle.textContent = place.name;
+
+        const weatherUrl =
+          "https://api.open-meteo.com/v1/forecast?latitude=" +
+          encodeURIComponent(place.latitude) +
+          "&longitude=" +
+          encodeURIComponent(place.longitude) +
+          "&current=temperature_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto";
+
+        const weatherRes = await fetch(weatherUrl);
+        if (!weatherRes.ok) throw new Error("Weather chyba");
+        const weatherData = await weatherRes.json();
+
+        const currentTemp = weatherData?.current?.temperature_2m;
+        if (typeof currentTemp === "number") {
+          const rounded = Math.round(currentTemp * 10) / 10;
+          tempStatus.textContent = "Aktuální teplota";
+          tempValue.textContent = `${rounded > 0 ? "+" : ""}${rounded} °C`;
+        } else {
+          tempStatus.textContent = "Teplota nedostupná";
+          tempValue.textContent = "-- °C";
+        }
+
+        renderForecast(weatherData?.daily);
+      } catch (err) {
+        tempStatus.textContent = "Bez dat / offline";
+        tempValue.textContent = "-- °C";
+      }
+    }
+
+    clearBtn.addEventListener("click", () => {
+      placeInput.value = "";
+      placeInput.focus();
+    });
+
+    weatherForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetchTemperatureForPlace(placeInput.value);
+    });
+
+    proBtn.addEventListener("click", () => {
+      showModal(
+        "Přesnější předpověď (PRO)",
+        "Chytrý norský model se pohádal s radarem a odhaduje šanci na úspěch pořád na 50 %."
+      );
+    });
+
+    complaintBtn.addEventListener("click", () => {
+      showModal(
+        "Reklamace zamítnuta",
+        "Oddělení stížností na počasí má zavřeno. Reklamaci si vyřiďte s mraky."
+      );
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+      modalBackdrop.classList.remove("open");
+    });
+
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) {
+        modalBackdrop.classList.remove("open");
+      }
+    });
+
+    fetchTemperatureForPlace(placeInput.value);
+  </script>
+</body>
+</html>
