@@ -544,10 +544,7 @@
 
   <script>
     const STORAGE_KEY = "pocasi_50_50_saved_places_v1";
-    const DEFAULT_SAVED_PLACES = [
-      { id: "home", label: "Domov", query: "Rataje nad Sázavou", icon: "🏠" },
-      { id: "work", label: "Práce", query: "Jažlovice", icon: "💼" }
-    ];
+    const DEFAULT_SAVED_PLACES = [];
 
     const verdicts = [
       "„Buď bude sněžit, nebo nebude. Zjisti to oknem.“",
@@ -582,7 +579,7 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return [...DEFAULT_SAVED_PLACES];
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_SAVED_PLACES];
+        return Array.isArray(parsed) ? parsed : [...DEFAULT_SAVED_PLACES];
       } catch (e) {
         return [...DEFAULT_SAVED_PLACES];
       }
@@ -614,23 +611,20 @@
           fetchTemperatureForPlace(item.query, item.label);
         });
 
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "saved-chip-del";
+        delBtn.textContent = "✕";
+        delBtn.setAttribute("aria-label", `Smazat ${item.label}`);
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const updated = loadSavedPlaces().filter((p) => p.id !== item.id);
+          savePlacesToStorage(updated);
+          renderSavedPlaces();
+        });
+
         chip.appendChild(btn);
-
-        if (!["home", "work"].includes(item.id)) {
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "saved-chip-del";
-          delBtn.textContent = "✕";
-          delBtn.setAttribute("aria-label", `Smazat ${item.label}`);
-          delBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const updated = loadSavedPlaces().filter((p) => p.id !== item.id);
-            savePlacesToStorage(updated);
-            renderSavedPlaces();
-          });
-          chip.appendChild(delBtn);
-        }
-
+        chip.appendChild(delBtn);
         savedPlacesList.appendChild(chip);
       });
     }
