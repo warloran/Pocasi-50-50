@@ -142,6 +142,30 @@
       background: var(--accent-hover);
     }
 
+    .btn-location {
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .btn-location:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: rgba(0, 184, 217, 0.12);
+    }
+
+    .btn-location:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
     .verdict-header {
       display: flex;
       justify-content: space-between;
@@ -362,6 +386,7 @@
           <button type="button" class="clear-btn" id="clearBtn" aria-label="Vymazat">✕</button>
         </div>
         <button type="submit" class="btn-primary">🔍 Zkontrolovat počasí</button>
+        <button type="button" class="btn-location" id="locationBtn">📍 Moje poloha</button>
       </form>
     </section>
 
@@ -439,6 +464,7 @@
     const placeInput = document.getElementById("placeInput");
     const clearBtn = document.getElementById("clearBtn");
     const weatherForm = document.getElementById("weatherForm");
+    const locationBtn = document.getElementById("locationBtn");
     const placeTitle = document.getElementById("placeTitle");
     const tempValue = document.getElementById("tempValue");
     const tempStatus = document.getElementById("tempStatus");
@@ -500,6 +526,112 @@
       }
     }
 
+    async function fetchWeatherByCoords(lat, lon, displayLabel, fillInput = false) {
+      placeTitle.textContent = displayLabel;
+      if (fillInput) {
+        placeInput.value = displayLabel;
+      }
+      tempStatus.textContent = "Zjišťuji teplotu...";
+      tempValue.textContent = "...";
+      pickRandomQuote();
+
+      try {
+        const weatherUrl =
+          "https://api.open-meteo.com/v1/forecast?latitude=" +
+          encodeURIComponent(lat) +
+          "&longitude=" +
+          encodeURIComponent(lon) +
+          "&current=temperature_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto";
+
+        const weatherRes = await fetch(weatherUrl);
+        if (!weatherRes.ok) throw new Error("Weather chyba");
+        const weatherData = await weatherRes.json();
+
+        const currentTemp = weatherData?.current?.temperature_2m;
+        if (typeof currentTemp === "number") {
+          const rounded = Math.round(currentTemp * 10) / 10;
+          tempStatus.textContent = "Aktuální teplota";
+          tempValue.textContent = `${rounded > 0 ? "+" : ""}${rounded} °C`;
+        } else {
+          tempStatus.textContent = "Teplota nedostupná";
+          tempValue.textContent = "-- °C";
+        }
+
+        renderForecast(weatherData?.daily);
+      } catch (err) {
+        tempStatus.textContent = "Bez dat / offline";
+        tempValue.textContent = "-- °C";
+      }
+    }
+
+    async function resolvePlaceName(lat, lon) {
+      const fallback = `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+      try {
+        const url =
+          "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" +
+          encodeURIComponent(lat) +
+          "&lon=" +
+          encodeURIComponent(lon) +
+          "&accept-language=cs";
+        const res = await fetch(url);
+        if (!res.ok) return fallback;
+        const data = await res.json();
+        const addr = data?.address || {};
+        const obec =
+          addr.city ||
+          addr.town ||
+          addr.village ||
+          addr.municipality ||
+          addr.suburb ||
+          "";
+        const okres = addr.county || addr.state_district || "";
+
+        if (obec && okres && !okres.toLowerCase().includes(obec.toLowerCase())) {
+          return `${obec} • ${okres}`;
+        }
+        return obec || okres || fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function detectCurrentLocation() {
+      if (!navigator.geolocation) {
+        showModal("Poloha nedostupná", "Tento prohlížeč nepodporuje zjišťování polohy.");
+        return;
+      }
+
+      locationBtn.disabled = true;
+      const originalText = locationBtn.textContent;
+      locationBtn.textContent = "📡 Zjišťuji polohu...";
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const placeLabel = await resolvePlaceName(lat, lon);
+          await fetchWeatherByCoords(lat, lon, placeLabel, true);
+          locationBtn.disabled = false;
+          locationBtn.textContent = originalText;
+        },
+        (err) => {
+          locationBtn.disabled = false;
+          locationBtn.textContent = originalText;
+
+          let msg = "Polohu se nepodařilo zjistit.";
+          if (err.code === 1) {
+            msg = "Přístup k poloze je zamítnutý. Povol ho v nastavení prohlížeče pro tento web, nebo zadej místo ručně.";
+          } else if (err.code === 2) {
+            msg = "Signál polohy není momentálně dostupný.";
+          } else if (err.code === 3) {
+            msg = "Zjišťování polohy trvalo příliš dlouho.";
+          }
+          showModal("Poloha se nepovedla", msg);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
     async function fetchTemperatureForPlace(rawPlace) {
       const query = rawPlace.trim() || "Rataje nad Sázavou";
       placeTitle.textContent = query;
@@ -524,30 +656,8 @@
         }
 
         const place = geoData.results[0];
-        placeTitle.textContent = place.name;
-
-        const weatherUrl =
-          "https://api.open-meteo.com/v1/forecast?latitude=" +
-          encodeURIComponent(place.latitude) +
-          "&longitude=" +
-          encodeURIComponent(place.longitude) +
-          "&current=temperature_2m&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto";
-
-        const weatherRes = await fetch(weatherUrl);
-        if (!weatherRes.ok) throw new Error("Weather chyba");
-        const weatherData = await weatherRes.json();
-
-        const currentTemp = weatherData?.current?.temperature_2m;
-        if (typeof currentTemp === "number") {
-          const rounded = Math.round(currentTemp * 10) / 10;
-          tempStatus.textContent = "Aktuální teplota";
-          tempValue.textContent = `${rounded > 0 ? "+" : ""}${rounded} °C`;
-        } else {
-          tempStatus.textContent = "Teplota nedostupná";
-          tempValue.textContent = "-- °C";
-        }
-
-        renderForecast(weatherData?.daily);
+        const title = place.admin2 ? `${place.name} • ${place.admin2}` : place.name;
+        await fetchWeatherByCoords(place.latitude, place.longitude, title, false);
       } catch (err) {
         tempStatus.textContent = "Bez dat / offline";
         tempValue.textContent = "-- °C";
@@ -557,6 +667,10 @@
     clearBtn.addEventListener("click", () => {
       placeInput.value = "";
       placeInput.focus();
+    });
+
+    locationBtn.addEventListener("click", () => {
+      detectCurrentLocation();
     });
 
     weatherForm.addEventListener("submit", (e) => {
@@ -589,6 +703,4 @@
     });
 
     fetchTemperatureForPlace(placeInput.value);
-  </script>
-</body>
-</html>
+  
