@@ -166,6 +166,88 @@
       cursor: wait;
     }
 
+    .saved-section {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .saved-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .saved-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .btn-save-place {
+      background: rgba(0, 184, 217, 0.12);
+      border: 1px solid rgba(0, 184, 217, 0.35);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-save-place:hover {
+      background: rgba(0, 184, 217, 0.22);
+    }
+
+    .saved-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .saved-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px 6px 12px;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+
+    .saved-chip-btn {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-size: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .saved-chip-btn:hover {
+      color: var(--accent);
+    }
+
+    .saved-chip-del {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+    }
+
+    .saved-chip-del:hover {
+      color: #ff6b6b;
+    }
+
     .verdict-header {
       display: flex;
       justify-content: space-between;
@@ -388,6 +470,14 @@
         <button type="submit" class="btn-primary">🔍 Zkontrolovat počasí</button>
         <button type="button" class="btn-location" id="locationBtn">📍 Moje poloha</button>
       </form>
+
+      <div class="saved-section">
+        <div class="saved-header">
+          <span class="saved-label">Uložená místa</span>
+          <button type="button" class="btn-save-place" id="savePlaceBtn">＋ Uložit</button>
+        </div>
+        <div class="saved-list" id="savedPlacesList"></div>
+      </div>
     </section>
 
     <section class="card">
@@ -453,6 +543,12 @@
   </div>
 
   <script>
+    const STORAGE_KEY = "pocasi_50_50_saved_places_v1";
+    const DEFAULT_SAVED_PLACES = [
+      { id: "home", label: "Domov", query: "Rataje nad Sázavou", icon: "🏠" },
+      { id: "work", label: "Práce", query: "Jažlovice", icon: "💼" }
+    ];
+
     const verdicts = [
       "„Buď bude sněžit, nebo nebude. Zjisti to oknem.“",
       "„Venku je přesně tolik stupňů, kolik ukazuje teploměr, až se na něj podíváš.“",
@@ -465,6 +561,8 @@
     const clearBtn = document.getElementById("clearBtn");
     const weatherForm = document.getElementById("weatherForm");
     const locationBtn = document.getElementById("locationBtn");
+    const savePlaceBtn = document.getElementById("savePlaceBtn");
+    const savedPlacesList = document.getElementById("savedPlacesList");
     const placeTitle = document.getElementById("placeTitle");
     const tempValue = document.getElementById("tempValue");
     const tempStatus = document.getElementById("tempStatus");
@@ -476,6 +574,107 @@
     const modalTitle = document.getElementById("modalTitle");
     const modalText = document.getElementById("modalText");
     const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let activeQueryForSave = placeInput.value.trim() || "Rataje nad Sázavou";
+
+    function loadSavedPlaces() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [...DEFAULT_SAVED_PLACES];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_SAVED_PLACES];
+      } catch (e) {
+        return [...DEFAULT_SAVED_PLACES];
+      }
+    }
+
+    function savePlacesToStorage(places) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
+      } catch (e) {
+        // Ignoruj chybu úložiště
+      }
+    }
+
+    function renderSavedPlaces() {
+      const places = loadSavedPlaces();
+      savedPlacesList.innerHTML = "";
+
+      places.forEach((item) => {
+        const chip = document.createElement("div");
+        chip.className = "saved-chip";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "saved-chip-btn";
+        btn.textContent = `${item.icon || "📌"} ${item.label}`;
+        btn.title = item.query;
+        btn.addEventListener("click", () => {
+          placeInput.value = item.query;
+          fetchTemperatureForPlace(item.query, item.label);
+        });
+
+        chip.appendChild(btn);
+
+        if (!["home", "work"].includes(item.id)) {
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "saved-chip-del";
+          delBtn.textContent = "✕";
+          delBtn.setAttribute("aria-label", `Smazat ${item.label}`);
+          delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const updated = loadSavedPlaces().filter((p) => p.id !== item.id);
+            savePlacesToStorage(updated);
+            renderSavedPlaces();
+          });
+          chip.appendChild(delBtn);
+        }
+
+        savedPlacesList.appendChild(chip);
+      });
+    }
+
+    function addCurrentPlaceToSaved() {
+      const candidate = (placeInput.value || activeQueryForSave || "").trim();
+      if (!candidate) {
+        showModal("Chybí název místa", "Nejdřív zadej nebo načti nějaké místo, které chceš uložit.");
+        return;
+      }
+
+      const cleanBase = candidate.split("•")[0].trim();
+      const customLabel = prompt("Jak chceš místo pojmenovat? (např. Domov, Práce, Chalupa)", cleanBase);
+      if (customLabel === null) return;
+
+      const label = customLabel.trim() || cleanBase;
+      const places = loadSavedPlaces();
+      const lowerLabel = label.toLowerCase();
+      const icon = lowerLabel.includes("domov")
+        ? "🏠"
+        : lowerLabel.includes("prác") || lowerLabel.includes("prace") || lowerLabel.includes("kancl")
+          ? "💼"
+          : "📌";
+
+      const existingIdx = places.findIndex((p) => p.label.toLowerCase() === lowerLabel);
+      if (existingIdx >= 0) {
+        places[existingIdx] = {
+          ...places[existingIdx],
+          label,
+          query: cleanBase,
+          icon
+        };
+      } else {
+        places.push({
+          id: "place_" + Date.now(),
+          label,
+          query: cleanBase,
+          icon
+        });
+      }
+
+      savePlacesToStorage(places);
+      renderSavedPlaces();
+    }
 
     function showModal(title, text) {
       modalTitle.textContent = title;
@@ -531,6 +730,7 @@
       if (fillInput) {
         placeInput.value = displayLabel;
       }
+      activeQueryForSave = displayLabel;
       tempStatus.textContent = "Zjišťuji teplotu...";
       tempValue.textContent = "...";
       pickRandomQuote();
@@ -632,9 +832,10 @@
       );
     }
 
-    async function fetchTemperatureForPlace(rawPlace) {
+    async function fetchTemperatureForPlace(rawPlace, customHeading = "") {
       const query = rawPlace.trim() || "Rataje nad Sázavou";
-      placeTitle.textContent = query;
+      activeQueryForSave = query;
+      placeTitle.textContent = customHeading ? `${customHeading} (${query})` : query;
       tempStatus.textContent = "Zjišťuji teplotu...";
       tempValue.textContent = "...";
       pickRandomQuote();
@@ -656,7 +857,8 @@
         }
 
         const place = geoData.results[0];
-        const title = place.admin2 ? `${place.name} • ${place.admin2}` : place.name;
+        const baseLocation = place.admin2 ? `${place.name} • ${place.admin2}` : place.name;
+        const title = customHeading ? `${customHeading} • ${baseLocation}` : baseLocation;
         await fetchWeatherByCoords(place.latitude, place.longitude, title, false);
       } catch (err) {
         tempStatus.textContent = "Bez dat / offline";
@@ -671,6 +873,10 @@
 
     locationBtn.addEventListener("click", () => {
       detectCurrentLocation();
+    });
+
+    savePlaceBtn.addEventListener("click", () => {
+      addCurrentPlaceToSaved();
     });
 
     weatherForm.addEventListener("submit", (e) => {
@@ -702,6 +908,7 @@
       }
     });
 
+    renderSavedPlaces();
     fetchTemperatureForPlace(placeInput.value);
   </script>
 </body>
